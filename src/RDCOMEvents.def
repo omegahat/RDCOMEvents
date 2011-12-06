@@ -1,0 +1,7 @@
+EXPORTS
+ R_getEnumConnectionPoints
+ R_getConnectionInterface
+ R_AdviseConnectionPoint
+ R_UnadviseConnectionPoint
+ R_FindConnectionPoint 
+ RDCOM_ProcessEvents

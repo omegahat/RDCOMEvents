@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body>
+<h1></h1>
+
+<h2>Version 0.3-1</h2>
+<dl>
+ <dt>
+ <li> Minor fix to findConnectionPoint() which used is.list()
+  rather than is(x, "list") or inherits(x, "list") to determine
+  if result was a list of connection points or a single one.
+ <dd>
+</dl>
+
+<h2>Version 0.2-0</h2>
+
+<dl>
+
+  <dt>
+  <li> Added connectEventHandlers() as a high-level function
+       for registering a collection of R functions as event handlers
+       for a connection point. This simplifies the creation
+       of a COMEventServerInfo and a COMEventServer object before
+       connecting.  That avenue is of course still available when more control is 
+       needed.
+  <dd>
+
+  <dt>
+  <li>  Added IExpandedConnectionPoint and made this the default so that
+      we have additional information about the connection point,
+      specifically the host/parent object and also the UUID of the
+      interface that an event sink/handler is expected to implement for that
+      connection point/event source.
+  <dd>
+
+ <dt>
+ <li> Added an accessor (RDCOM_ProcessEvents) to the R_ProcessEvents routine so that we can
+      process the event queue inline and so block for procedural-style
+      code. 
+  
+ <dd>
+ <dt>
+ <li> Added guids to a server so that it can respond to QueryInterfaces
+     and admit to interfaces that it implements. 
+ <dd> This will be integrated into the RDCOMServer package more generally.
+
+ <dt>
+ <li>  More updates for getConnectionPoints() and findConnectionPoint().
+ <dd>
+
+ <dt>
+ <li> Fix for getConnectionPoints() to avoid errors when can't get 
+    next values. Return what we already have.
+ <dd>
+
+ <dt>
+ <li> Example for Excel.
+ <dd>
+
+</dl>
+
+
+<hr>
+<address><a href="http://www.stat.ucdavis.edu/~duncan">Duncan Temple Lang</a>
+<a href=mailto:duncan@wald.ucdavis.edu>&lt;duncan@wald.ucdavis.edu&gt;</a></address>
+<!-- hhmts start -->
+Last modified: Sat Dec 03 10:10:46 Pacific Standard Time 2005
+<!-- hhmts end -->
+</body> </html>

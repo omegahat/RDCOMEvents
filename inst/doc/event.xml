@@ -1,0 +1,513 @@
+<article
+   xmlns:s="http://cm.bell-labs.com/stat/S4"
+   xmlns:com="http://www.microsoft.com"
+   xmlns:c="http://www.C.org"
+   >
+
+<articleinfo>
+  <title>Handling COM events in S</title>
+  <author>
+   <firstname>Duncan</firstname><surname>Temple Lang</surname>
+    <affiliation><ulink url="http://www.stat.ucdavis.edu/~duncan">Department of Statistics, UC Davis</ulink>
+<para/>
+The basis of the work was done as a Member of Technical Staff at the 
+ <ulink ulr="http://cm.stat.bell-labs.com">Department of Statistics and Data Mining</ulink>, 
+Bell Labs, Lucent Technologies
+      </affiliation>
+  </author>
+ <date/>
+</articleinfo>
+
+<section ID="Introduction">
+
+This is a brief introduction to using S functions and objects as event
+handlers in COM.  Our example is intentionally simple and doesn't do
+much other than illustrate the mechanism.  We will register a
+collection of S functions as event handlers for the top-level Excel
+application object.  This singals events such as when a sheet is made
+active and inactive, when the selection changes, when a new workbook
+is created, when the window is resized and so on.
+
+<para/>
+
+<ignore>
+There is a minor bug in R-1.7.* that causes
+problems with having the RDCOMClient, RDCOMServer and SWinTypeLibs
+packages attached at the same time.  Specifically, methods for the [[
+operator don't seem to be defined.  As a result, what we do is use the
+type information in one session and create the relevant
+information. Then we save that session and start a second one in which
+we use it without loading the SWinTypeLibs package.
+So one can run this as
+<s:code omit="true">
+<![CDATA[
+Rterm.exe --save < event.S
+Rgui.exe 
+  source("event1.S")
+]]>
+</s:code>
+This is fixed in the development version of R-1.8.0.
+</ignore>
+<para/>
+
+We start by determining what events we should implement.  We do this
+by knowing that the interface of interest is the
+<com:class>Application</com:class> in the Excel type library.
+So the first thing we do is to load the <s:package>SWinTypeLibs</s:package>
+and read the type library for Excel into memory.
+<s:code group="event.S">
+library(SWinTypeLibs)
+
+lib = LoadTypeLib("C:\\Program Files\\Microsoft Office\\Office\\EXCEL9.OLB")
+</s:code>
+
+<para/>
+For those who want to see only the user-level mechanism,
+<link linkend="userInterface">jump to here</link>.
+
+<para/>
+
+Now, we can ask about the <com:class>Application</com:class>.
+<s:code>
+lib[["Application"]]
+</s:code>
+
+We see that this is a CoClass type which essentially means that it is
+a container for multiple interfaces and classes. So we need to look at
+each of its elements.
+<s:code>
+getElements(lib[["Application"]])
+</s:code>
+
+This returns a list with two elements, one for the
+<com:class>_Application</com:class> and another for the
+<com:class>IAppEvents</com:class>.  This is the one we want.  From
+this, we can ask for all of the event methods, i.e. the ones to which
+we have to respond as called by the event source, the Excel
+Application object.
+
+<s:code group="event.S">
+i = getElements(lib[["Application"]])[[2]]
+funcs = getFuncs(i)
+</s:code>
+
+The names of the functions are given 
+<s:code>
+names(funcs)
+</s:code>
+<s:output>
+<![CDATA[
+> names(ff[[2]])
+ [1] "QueryInterface"         "AddRef"                 "Release"               
+ [4] "GetTypeInfoCount"       "GetTypeInfo"            "GetIDsOfNames"         
+ [7] "Invoke"                 "NewWorkbook"            "SheetSelectionChange"  
+[10] "SheetBeforeDoubleClick" "SheetBeforeRightClick"  "SheetActivate"         
+[13] "SheetDeactivate"        "SheetCalculate"         "SheetChange"           
+[16] "WorkbookOpen"           "WorkbookActivate"       "WorkbookDeactivate"    
+[19] "WorkbookBeforeClose"    "WorkbookBeforeSave"     "WorkbookBeforePrint"   
+[22] "WorkbookNewSheet"       "WorkbookAddinInstall"   "WorkbookAddinUninstall"
+[25] "WindowResize"           "WindowActivate"         "WindowDeactivate"      
+[28] "SheetFollowHyperlink"  
+> 
+]]>
+</s:output>
+The first 7 of these come from the IDispatch interface and we can
+ignore.
+<s:code group="event.S">
+ funcs = funcs[-c(1:7)]
+</s:code>
+
+In order to respond to these Excel events, we will create S functions
+corresponding to the different event types.  When an event is
+generated in Excel, the corresponding function will be invoked in S.
+To do this, we will create a regular COM server in S by supplying a
+list of function objects. So our task is to define this
+list of functions.
+
+<para/>
+
+Since we may not want to actually provide a function for each event
+method in this interface, we might think about creating default
+handlers for those functions we won't implement.  We have all the
+information in the <s:var>funcs</s:var> to do this since we have the
+function name, the parameters, etc.  Since these functions are for
+events, they do not return anything. Accordingly, all we really need
+is the function name and a degenerate function that takes any number
+of arguments and does nothing.
+<s:code group="event.S">
+methods = vector("list", length(funcs))
+methods[1:length(methods)] = list(function(...){})
+names(methods) = names(funcs)
+</s:code>
+
+Now, we can provide the methods we do want to implement and insert
+them into this list.  In our example, we will catch the events named
+SheetActivate, NewWorkbook and SheetSelectionChange.
+For our example, we will do very little in these functions except for 
+write a message to the terminal. 
+<s:code group="event.S">
+methods[["SheetActivate"]] = function(sheet) {
+                               cat("In sheet activate\n")
+                             }
+</s:code>
+For the new book event, we will find out how
+many books exist in this collection.
+<s:code group="event.S">
+methods[["NewWorkbook"]] = function(book) {
+                               n = book[["Parent"]][["Workbooks"]][["Count"]]
+                               cat("In New workbook: # books", n, "\n")
+                             }
+</s:code>
+
+And finally, the SheetSelectionChange handler
+is defined as
+<s:code group="event.S">
+methods[["SheetSelectionChange"]] =
+                              function(sheet, range) {
+                                 cat("Sheet selection changed\n")
+                                }
+</s:code>
+
+Note that we have two arguments here and that we are given the (newly)
+selected range.  We might use this for example to update a plot in
+GGobi by brushing or identifying the selected records.
+
+
+<para/>
+
+At this point, we have our list of methods for the S-language COM
+server.  In the usual server, we also need to specify a mechanism for
+mapping method and parameter names to integers and back so that
+clients of this server can use the Invoke method of the IDispatch
+interface in COM.  However, we are in a different situation here. We
+are implementing an interface that the event source has already
+defined.  Since the event source is the one that is calling our
+methods, it doesn't need to ask how to map names to integers; it has
+already done this.  It will call Invoke directly without first calling
+the GetNamesOfIDs method of the server.  It will call Invoke with the
+IDs it uses. We must therefore figure out how to map these numbers to
+the event method names.  Again, the type library will help us do this.
+We can find the IDs for the different method names 
+using the following simple function
+<s:code group="event.S">
+getEventNameIDs =
+function(info)
+{
+  tmp = names(getFuncs(info))
+  el = sapply(tmp, function(x) getNameIDs(x, info))
+  names(el) = tmp
+  el
+}
+</s:code>
+
+This expects to be called with the <s:class>ITypeLibEntry</s:class> object
+representing the <com:class>IAppEvent</com:class> in our case.  It
+computes all the functions and iterates over their names to get the
+corresponding identifier.
+
+<para/>
+
+Note that we could create an instance of the Excel Application class
+using the <s:package>RDCOMClient</s:package> and then ask about its
+type information.  Unfortunately, since that is an object and
+implements the IDispatch interface, we get the type information
+specific to that interface and not the general
+<com:class>Application</com:class> CoClass.
+
+<para/>
+
+<invisible>
+<s:code omit="true">
+# Example of events with 
+omethods = list(
+ NewWorkbook = function(wb) {
+   cat("Creating new work book\n")
+ },
+ SheetActivate = function(sh) {
+   cat("Activating sheet\n")
+ },
+ SheetBeforeDoubleClick = function(sh, range, cancel) {
+
+ },
+ SheetBeforeRightClick = function(sh, range, cancel) {
+
+ },
+ SheetCalculate = function(sh) {
+
+ },
+ SheetChange = function(sh, range) {
+  cat("Sheet change\n")
+ },
+ SheetDeactivate = function(sh, range) {
+  cat("Sheet deactivated\n")
+ },
+ SheetFollowHyperLink = function(sh, link) {
+
+ },
+ SheetSelectionChange = function(sh, range) {
+   cat("Selection changed\n")
+ },
+ WindowActivate = function(wb, window) {
+
+ },
+ WindowDeactivate = function(wb, window) {
+
+ },
+ WindowResize = function(wb, window) {
+ },
+ WorkbookActivate = function(wb) {
+  cat("Activating workbook\n")
+ },
+ WorkbookAddinInstall = function(wb) {
+
+ },
+ WorkbookAddinUninstall = function(wb) {
+
+ },
+ WorkbookBeforeClose = function(wb, cancel) {
+
+ },
+ WorkbookBeforePrint = function(wb, cancel) {
+
+ },
+ WorkbookBeforeSave = function(wb, saveAsUI, cancel) {
+
+ },
+ WorkbookDeactivate = function(wb) {
+
+ },
+ WorkbookNewSheet = function(wb, sh) {
+
+ },
+ WorkbookOpen = function(wb) {
+
+ }
+)
+</s:code>
+</invisible>
+
+
+<invisible>
+<s:code>
+options(error=recover)
+</s:code>
+</invisible>
+
+<para/>
+
+The next step in our preparation is to create our COM object that will
+act as the event handler.  This will be the <emphasis>sink</emphasis>
+for the event source.  We have a list of functions that we want to use
+as the methods for the <com:interface>IAppEvents</com:interface>
+interface. We also have the mapping of the names of the methods to the
+integers that will be used by the event source when invoking the
+different methods.  To create a COM server in S we need to provide a
+mechanism for dispatching the invocation from the event source to the
+particular S function.  We do this by providing another S function
+that has access to the methods and the name-identifier map.  This
+function processes the Invoke call from the IDispatch interface and
+interprets with respect to the available methods.  The following
+function does this.  It returns a function thus creating a closure
+with an environment that contains the methods (<s:var>funcs</s:var>)
+and the name-identifer map (<s:var>ids</s:var>).  The function it
+returns (<s:func>invoke</s:func>) takes 4 arguments: the identifier of
+the method being invoked, a logical vector indicating the style of
+invocation (e.g. regular function or property accessor), the arguments
+to the call, and the identifiers of the names of the arguments.  Since
+we know that events are called with their full collection of
+arguments, we don't need to worry about the final arguments.
+
+<para/>
+The <s:func>invoke</s:func> function is quite simple. It
+retrieves the name of the method from the name-identifier map.
+Then it searches the list of functions for an entry with that name.
+If such an element exists, it calls it with the specified
+arguments (which are given in reverse order by COM).
+
+<s:code group="event.S">
+createCOMEventServer = function(funcs, ids) {
+ invoke = 
+   function(id, method, args, namedArgs) {
+      funcName = names(ids)[which(ids == id)]
+      if(length(funcName)) {
+        eval(as.call(c(funcs[[funcName]], rev(args))), env = globalenv())
+      } else {
+	cat("Ignoring event number", id, "\n")
+      }
+   }
+
+ list(Invoke = invoke, GetNamesOfIDs = NULL)
+}
+</s:code>
+
+Note that we return a list of two functions, the first being the
+<s:func>invoke</s:func> function and the second which will never be
+used in this case since the Excel event source will never ask for an
+identifier for a name.
+
+<para/>
+
+We should also note here that we have separately created a list of
+functions for all of the methods in the interface we have to implement
+and then created a dispatch mechanism that calls these methods even if
+they are degenerate.  Our dispatch mechanism however gracefully
+handles the case where there is no function for a particular method.
+So we could just as easily have provided a list of only the methods of
+interest. Either works, but the reduced list is marginally more
+efficient since it avoids calls to empty functions.
+
+
+<s:code group="event.S">
+ids = getEventNameIDs(lib[["IAppEvents"]])
+</s:code>
+
+<para/>
+
+Given this function, we can create our server.  We first load the
+<s:package>RDCOMServer</s:package>.  Then we create our dispatch
+mechanism by calling <s:func>createCOMEventServer</s:func>.  And
+finally we create the C++-level COM object that can be used with
+clients and event sources everywhere by calling
+<c:routine>R_RCOMSObject</c:routine>.
+
+<s:code group="event1.S">
+library(RDCOMServer)
+server = createCOMEventServer(methods, ids)
+server = .Call("R_RCOMSObject", server)
+</s:code>
+
+
+Now we are ready to create the Excel application instance which we do
+in the usual manner using <s:func>COMCreate</s:func> in the
+<s:package>RDCOMClient</s:package> package.
+
+<s:code group="event1.S">
+library(RDCOMClient)
+e = COMCreate("Excel.Application")
+</s:code>
+
+For the purposes of this demonstration, we will create a workbook
+before we register to handle any events. This will ensure that the
+only events we get initially are ones that we manually generated by
+interacting with the Excel GUI. Later, we'll see how
+
+<s:code group="event1.S">
+book = e[["Workbooks"]]$Add()
+e[["Visible"]] = TRUE
+</s:code>
+
+
+At this point, we are finally ready to make the connection between the
+event source (Excel) and our event handler.  We ask for the connection
+points and extract the first and only element.
+Then we call the <s:func>connectConnectionPoint</s:func>
+
+<s:code group="event1.S">
+connPoint = getConnectionPoints(e)[[1]]
+cookie = connectConnectionPoint(connPoint, server)
+</s:code>
+
+Now move the mouse over to Excel and start switching between the
+different sheets and selecting different cells and ranges.  You should
+notice output being generated in the R console informing you of what
+events have been processed by our handler.
+
+<para/>
+
+Note that we can continue to control Excel
+using regular COM calls and some of these might
+generate events.
+<s:code>
+ e[["Workbooks"]]$Add()
+</s:code>
+In this case, our handlers will be invoked 
+within our (client) COM call.
+
+And finally we disconnect the event handler from
+Excel and we no longer receive events.
+<s:code omit="true">
+disconnectConnectionPoint(connPoint, cookie)
+</s:code>
+
+</section>
+
+
+<section ID="userInterface">
+<title ID="userInterface">Higher-level Interaction</title>
+
+The developer will typically know which object they want to
+receive events from. For example, she might be interested in
+the Excel Workbook. We can get the possible connection
+points directly from an instance of this object
+using
+<s:code group="event3.S">
+e = COMCreate("Excel.Application")
+book = e[["Workbooks"]]$Add()
+
+connections = getConnectionPoints(book)
+</s:code>
+Now, from this list of possible connection interfaces, we can 
+find the definitions of these interfaces from the ITypeLibrary.
+For the Workbook, there is only one possible interface.
+We can find the associated ITypeInfo from the library
+<s:code group="event3.S">
+iface = lib[[names(connections)]]
+</s:code>
+From this, we can generate a template event handler
+that can be used with the connection point.
+<s:code group="event3.S">
+s = createCOMEventServerInfo(iface, complete = TRUE)
+</s:code>
+We can then examine the different methods and provide
+implementations for the ones of interest.
+<s:code group="event3.S">
+methods = list(...)
+s = createCOMEventServer(iface, methods = methods)
+</s:code>
+Now we have sufficient information in R to
+construct an event handler
+and we can do this with the
+<s:func>createCOMEeventServer</s:func>
+function
+<s:code group="event3.S">
+server = createCOMEventServer(s$methods, s$ids, direct = TRUE, verbose = TRUE)
+</s:code>
+This creates the S COM dispatcher and the associated C level 
+server (via the <s:arg>direct</s:arg> argument).
+We register the server with the connection point in the same way as before
+<s:code group="event3.S">
+e = COMCreate("Excel.Application")
+
+book = e[["Workbooks"]]$Add()
+e[["Visible"]] = TRUE
+
+
+connPoint = getConnectionPoints(book)[[1]]
+cookie = connectConnectionPoint(connPoint, server)
+</s:code>
+
+
+</section>
+
+
+<section ID="Todo">
+<title ID="Todo">Todo</title>
+
+<done/>
+Put the names of the elements on the return from
+<s:func>getElements</s:func>.
+This can be done easily now by 
+matching the UUIDs in the names of the elements
+with those in the ITypeLibrary.
+<invisible>
+<s:code>
+els = getElements(lib[["element"]])
+libElements = getTypeLibUUIDs(lib)
+names(libElements)[match(names(els), libElements)]
+</s:code>
+</invisible>
+
+</section>
+
+</article>
+

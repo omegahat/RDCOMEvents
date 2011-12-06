@@ -1,0 +1,40 @@
+useDynLib(RDCOMEvents)
+
+importClassesFrom(RDCOMClient, IUnknown, COMIDispatch)
+importClassesFrom(SWinTypeLibs, ITypeInfo, RCOMEventInterfaceDefinition)
+
+#importFrom(RDCOMServer, QueryInterface)
+exportMethods("QueryInterface")
+exportMethods("createCOMObject")
+
+import(RDCOMServer)
+
+exportClasses(IConnectionPoint, IExpandedConnectionPoint, 
+              COMEventServerInfo, RDCOMEventServer, RDCOMNativeEventServer)
+
+export(getConnectionPoints, connectConnectionPoint, Advise,
+       disconnectConnectionPoint, Unadvise,
+       createCOMEventServerInfo,
+       connectEventHandlers)
+
+# This will be moved to RDCOMServer.
+export(createCOMServerInfo)
+
+exportMethods(findConnectionPoint, createCOMEventServer)
+
+exportClasses("RDCOMEventServer")
+exportMethods(QueryInterface)
+
+
+export(createFunctionTemplates, createCompiledFunction, createFunction)
+#       mergeFunctions, 
+
+export(createEventServerFromTemplate)
+
+
+ # XXX need to document.
+export(getUUIDFromConnectionPoint)
+
+export(addDCOMEventHandler)
+exportClass(CompiledCOMEventInterfaceInfo)
+

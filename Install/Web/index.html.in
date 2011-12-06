@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title>The RDCOMServer Package</title>
+</head>
+
+<body>
+<h1>The RDCOMEvents Package (version @MAJOR_VERSION@.@MINOR_VERSION@-@PATCH_LEVEL@)</h1>
+
+<p align="right">
+<a href="@TAR_SRC_FILE@">Source</a><br/>
+<a href="@ZIP_FILE@">Windows Binary</a>
+</p>
+
+This package provides a mechanism for connecting
+one or more R functions to a DCOM event source,
+such as Excel, Word, and many more applications.
+This allows R users to programmatically respond
+to activities and specified events in other applications
+using pure R code.
+Examples include:
+<ul>
+  <li> We can display data in a new plot when an Excel
+     user switches between worksheets.
+  <li> When the Excel user selects one or more rows in the sheet,
+     color the corresponding points in an R plot.
+  <li> responding to updates and changes to data
+       stored in an Abstract Data Object (ADO) component.
+  <li> We can also use the <a href="../RDCOMClient">RDCOMClient</a>
+       package to create new controls in another application
+       such as buttons in a toolbar, a slider, etc. and catch the
+       action events on these components in R to customize
+       what should happen.
+</ul>
+
+
+
+<p/> This package can be used along with the <a
+href="../RDCOMClient">RDCOMClient</a> package which provides
+user-level access from S to other COM servers. 
+The ability to export S objects as COM values is important
+for general bi-directional connectivity with other COM clients.
+
+<p>
+
+Additionally, the
+<a href="../RDCOMServer">RDCOMServer</a> package
+provides facilities for defining COM classes
+implemented with R functions.
+And the supporting packages
+<a href="../SWinRegistry">SWinRegistry</a>
+and <a href="../SWinTypeLibs">SWinTypeLibs</a>
+provide the infrastructure for connecting R to the entire
+COM mechanism.
+
+<p>
+The facilities provided in this suite of packages are more
+general than those provided
+via the <a href="http://sunsite.univie.ac.at/rcom/">RCOM package</a>
+by Thomas Baier.
+The model is more general and allows a more complete
+set of computations on different data types and also
+hides the R language from the client software connecting
+to it.
+The generality may make the interface appear more
+complicated and slightly more indirect.
+We believe that it is necessary and relatively simple
+for developing non-trivial applications involving DCOM components
+and R.
+
+
+<h2>Downloads</h2>
+
+<ul>
+  <li> <a href="@TAR_SRC_FILE@">Source Code</a> .
+  <li> <a href="@ZIP_FILE@">Windows Binaries</a>       
+</ul>
+
+<p/>
+
+You can get binaries for these and install them simply by
+unzipping them from within in the <code>$R_HOME/library</code>
+directory.
+
+<p>
+
+<h2>Documentation</h2>
+
+This package was split out of the <a href="../RDCOMServer">RDCOMServer</a> package.
+Some of the documentation remains <a href="../RDCOMServer/Docs">there</a> for the moment.
+<dl>
+   <dt>
+   <li> <a href="event.html">Handling COM Events in R</a>
+   <dd> A description of how to use S functions to implement
+    COM event handlers, e.g. for Active X, Excel, etc.
+
+  <dt>
+  <li> <a href="FAQ.html">FAQ</a>
+  <dd> Frequently asked questions.
+</dl>
+
+<h2>Examples</h2>
+
+There are some examples in the <a
+href="examples"><code>examples/</code></a>.
+
+<hr>
+<address><a href="http://www.stat.ucdavis.edu/~duncan">Duncan Temple Lang</a>
+<a href=mailto:duncan@wald.ucdavis.edu>&lt;duncan@wald.ucdavis.edu&gt;</a></address>
+<!-- hhmts start -->
+Last modified: Sun Apr 17 08:13:14 PDT 2005
+<!-- hhmts end -->
+</body> </html>

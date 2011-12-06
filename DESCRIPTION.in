@@ -1,0 +1,15 @@
+Package: @PKG_NAME@
+Version: @MAJOR_VERSION@.@MINOR_VERSION@-@PATCH_LEVEL@
+Date:  @DATE@
+Title: R-DCOM events
+Author: Duncan Temple Lang <duncan@wald.ucdavis.edu>
+        David James <dj@resarch.bell-labs.com>
+Maintainer: Duncan Temple Lang <duncan@wald.ucdavis.edu>
+Description: Provides facilities to use R functions and objects as handlers for DCOM events.
+License: GPL
+Depends: methods, RDCOMServer, RDCOMClient, SWinTypeLibs
+LazyLoad: yes
+Collate: events.R eventServer.S createFunctions.S compiled.R zzz.R
+LazyLoad: yes
+URL:  http://www.omegahat.org/@PKG_NAME@,  http://www.omegahat.org
+      http://www.omegahat.org/bugs
