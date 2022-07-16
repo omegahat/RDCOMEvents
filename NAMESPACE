@@ -8,6 +8,9 @@ exportMethods("QueryInterface")
 exportMethods("createCOMObject")
 
 import(RDCOMServer)
+import(methods)
+import(RDCOMClient)
+
 
 exportClasses(IConnectionPoint, IExpandedConnectionPoint, 
               COMEventServerInfo, RDCOMEventServer, RDCOMNativeEventServer)
