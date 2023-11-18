@@ -159,7 +159,7 @@ function(funcDef, varNames)
                     function(name) {
                        tmp = list( as.name(varNames[name]) )
                        names(tmp) = name
-                       do.call("substitute", list(funcDef[[name]], tmp))
+                       do.call(substitute, list(funcDef[[name]], tmp))
                     })
 
   names(e) = names(funcDef)
